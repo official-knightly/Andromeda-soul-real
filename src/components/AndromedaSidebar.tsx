@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   MessageSquare,
@@ -72,6 +72,35 @@ export const AndromedaSidebar: React.FC<AndromedaSidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState('');
+
+  // Global quick-search shortcut. Ctrl/Cmd+K focuses conversation search;
+  // Escape clears the query when the search field is active.
+  useEffect(() => {
+    const handleSearchShortcut = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTyping = !!target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      );
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        document.getElementById('search-chats-input')?.focus();
+        return;
+      }
+
+      if (event.key === 'Escape' && target?.id === 'search-chats-input') {
+        if (searchQuery) {
+          event.preventDefault();
+          setSearchQuery('');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleSearchShortcut);
+    return () => window.removeEventListener('keydown', handleSearchShortcut);
+  }, [searchQuery]);
 
   const handleStartRename = (conv: Conversation, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -338,7 +367,7 @@ export const AndromedaSidebar: React.FC<AndromedaSidebarProps> = ({
             <input
               id="search-chats-input"
               type="text"
-              placeholder="Search conversations..."
+              placeholder="Search conversations..."\n              aria-label="Search conversations"\n              title="Search conversations (Ctrl+K)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:border-indigo-400 focus:bg-white focus:outline-none transition-all"
